@@ -373,7 +373,18 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
-          
+
+          {/* Validation Error Alert */}
+          {validationError && (
+            <div className="bg-rose-50 border border-rose-300 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center gap-2 text-rose-900 font-bold text-sm">
+                <AlertCircle className="w-4 h-4 text-rose-600" />
+                <span>Erro de Validação</span>
+              </div>
+              <p className="text-xs text-rose-800 whitespace-pre-wrap">{validationError}</p>
+            </div>
+          )}
+
           {/* Quick Trade Mode Notice */}
           {isTradeMode && (
             <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-3">
