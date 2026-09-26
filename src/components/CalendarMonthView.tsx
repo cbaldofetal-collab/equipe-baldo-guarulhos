@@ -477,7 +477,7 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
                               style={{ backgroundColor: doc?.color || '#0d9488' }}
                             />
                             <span className={`truncate font-medium ${isCurrentUser ? 'text-teal-900 font-bold' : 'text-slate-800'}`}>
-                              {doc ? doc.name.replace('Dr. ', '').replace('Dra. ', '') : 'Plantão'}
+                              {doc?.name ? doc.name.replace('Dr. ', '').replace('Dra. ', '') : (shift.doctorId ? 'Médico' : 'Plantão Vago')}
                             </span>
                           </div>
                         )}
