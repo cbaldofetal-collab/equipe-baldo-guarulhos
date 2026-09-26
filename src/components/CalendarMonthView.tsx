@@ -541,7 +541,11 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
                               const doc = shift.doctorId ? docMap.get(shift.doctorId) : null;
                               const docName = doc?.name ? doc.name.replace('Dr. ', '').replace('Dra. ', '') : (shift.doctorId ? 'Médico' : 'Vago');
                               return (
-                                <div key={shift.id} className="flex items-center gap-1.5 text-[9px] px-1 py-0.5 bg-slate-50 rounded">
+                                <div
+                                  key={shift.id}
+                                  onClick={() => onSelectShift(shift)}
+                                  className="flex items-center gap-1.5 text-[9px] px-1 py-0.5 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer transition"
+                                >
                                   <span className="text-slate-500 font-semibold shrink-0">{shift.location}</span>
                                   <span className="text-slate-700 truncate">{docName}</span>
                                 </div>
