@@ -228,6 +228,19 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       return true; // Only validate if doctor selected
     }
 
+    // Get all salas that will be created with this doctor in this request
+    const allSalasInThisRequest = [location, ...additionalLocations];
+
+    // If creating multiple salas, check for conflicts within the SAME request
+    // (if trying to assign same doctor to multiple salas at same time)
+    if (allSalasInThisRequest.length > 1) {
+      const doctorName = doctors.find(d => d.id === doctorId)?.name || 'Médico';
+      const errorMsg = `Dr(a). ${doctorName} não pode ser atribuído(a) a múltiplas salas no mesmo horário.\n\nSelecione outros médicos para as salas adicionais ou deixe-as como vagas.`;
+      setValidationError(errorMsg);
+      console.error('Multiple rooms for same doctor detected:', { doctorId, locations: allSalasInThisRequest, startTime, shiftType, date });
+      return false;
+    }
+
     if (!shifts || shifts.length === 0) {
       return true; // No shifts yet, no conflicts possible
     }
