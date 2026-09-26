@@ -164,6 +164,28 @@ async function initializeDatabase() {
 var app = (0, import_express.default)();
 var PORT = parseInt(process.env.PORT || "3000", 10);
 app.use(import_express.default.json());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+function toCamelCase(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(toCamelCase);
+  }
+  if (obj && typeof obj === "object") {
+    return Object.keys(obj).reduce((result, key) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      result[camelKey] = toCamelCase(obj[key]);
+      return result;
+    }, {});
+  }
+  return obj;
+}
 setInterval(() => {
   sseClients.forEach((client) => {
     try {
@@ -189,10 +211,10 @@ app.get("/api/events", async (req, res) => {
     const { data: trades } = await supabase.from("trades").select("*").limit(1e3);
     const { data: auditLogs } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100);
     const state = {
-      doctors: doctors || [],
-      shifts: shifts || [],
-      trades: trades || [],
-      auditLogs: auditLogs || []
+      doctors: toCamelCase(doctors) || [],
+      shifts: toCamelCase(shifts) || [],
+      trades: toCamelCase(trades) || [],
+      auditLogs: toCamelCase(auditLogs) || []
     };
     res.write(`data: ${JSON.stringify({ type: "init", state })}
 
@@ -211,10 +233,10 @@ app.get("/api/state", async (req, res) => {
     const { data: trades } = await supabase.from("trades").select("*").limit(1e3);
     const { data: auditLogs } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100);
     res.json({
-      doctors: doctors || [],
-      shifts: shifts || [],
-      trades: trades || [],
-      auditLogs: auditLogs || []
+      doctors: toCamelCase(doctors) || [],
+      shifts: toCamelCase(shifts) || [],
+      trades: toCamelCase(trades) || [],
+      auditLogs: toCamelCase(auditLogs) || []
     });
   } catch (err) {
     console.error("[uFetal] Error fetching state:", err);
@@ -328,8 +350,9 @@ app.post("/api/shifts", async (req, res) => {
       "create",
       `Novo plant\xE3o [${modalityLabel} \u2022 ${calculatedHours}h] em ${date} (${start_time}-${end_time}) para ${docName}.`
     );
-    broadcastEvent("shift_created", { shift: newShift });
-    res.status(201).json(newShift);
+    const camelShift = toCamelCase(newShift);
+    broadcastEvent("shift_created", { shift: camelShift });
+    res.status(201).json(camelShift);
   } catch (err) {
     console.error("[uFetal] Error creating shift:", err);
     res.status(500).json({ error: "Erro ao criar plant\xE3o" });
@@ -415,8 +438,9 @@ app.put("/api/shifts/:id", async (req, res) => {
       "update",
       `Plant\xE3o [${modalityLabel} \u2022 ${updated.duration_hours}h] de ${updated.date} atualizado.`
     );
-    broadcastEvent("shift_updated", { shift: updated });
-    res.json(updated);
+    const camelUpdated = toCamelCase(updated);
+    broadcastEvent("shift_updated", { shift: camelUpdated });
+    res.json(camelUpdated);
   } catch (err) {
     console.error("[uFetal] Error updating shift:", err);
     res.status(500).json({ error: "Erro ao atualizar plant\xE3o" });
@@ -529,8 +553,9 @@ app.post("/api/shifts/:id/replicate", async (req, res) => {
       "replicate_shift",
       `Escala de ${doctorName} replicada para ${months} m\xEAs(es)`
     );
-    broadcastEvent("shifts_replicated", { originalShift, createdShifts, months });
-    res.json({ success: true, createdCount: createdShifts.length, shifts: createdShifts });
+    const camelCreatedShifts = toCamelCase(createdShifts);
+    broadcastEvent("shifts_replicated", { originalShift, createdShifts: camelCreatedShifts, months });
+    res.json({ success: true, createdCount: camelCreatedShifts.length, shifts: camelCreatedShifts });
   } catch (err) {
     console.error("[uFetal] Error replicating shift:", err);
     res.status(500).json({ error: "Erro ao replicar escala" });
@@ -630,8 +655,10 @@ app.post("/api/trades/:id/accept", async (req, res) => {
       return res.status(409).json({ error: "Este plant\xE3o j\xE1 foi atribu\xEDdo" });
     }
     await addAuditLog(acceptingDoc.name, "trade_accept", `Troca aceita por ${acceptingDoc.name}.`);
-    broadcastEvent("trade_updated", { trade, shift });
-    res.json({ trade, shift });
+    const camelTrade = toCamelCase(trade);
+    const camelShift = toCamelCase(shift);
+    broadcastEvent("trade_updated", { trade: camelTrade, shift: camelShift });
+    res.json({ trade: camelTrade, shift: camelShift });
   } catch (err) {
     console.error("[uFetal] Error accepting trade:", err);
     res.status(500).json({ error: "Erro ao aceitar troca" });
@@ -654,8 +681,10 @@ app.post("/api/trades/:id/reject", async (req, res) => {
     }
     const { data: fromDoc } = await supabase.from("doctors").select("name").eq("id", trade.from_doctor_id).single();
     await addAuditLog(fromDoc?.name || "M\xE9dico", "trade_reject", "Solicita\xE7\xE3o de troca rejeitada.");
-    broadcastEvent("trade_updated", { trade, shift });
-    res.json({ success: true, trade });
+    const camelTrade = toCamelCase(trade);
+    const camelShift = toCamelCase(shift);
+    broadcastEvent("trade_updated", { trade: camelTrade, shift: camelShift });
+    res.json({ success: true, trade: camelTrade });
   } catch (err) {
     console.error("[uFetal] Error rejecting trade:", err);
     res.status(500).json({ error: "Erro ao rejeitar troca" });
@@ -678,8 +707,10 @@ app.post("/api/trades/:id/cancel", async (req, res) => {
     }
     const { data: fromDoc } = await supabase.from("doctors").select("name").eq("id", trade.from_doctor_id).single();
     await addAuditLog(fromDoc?.name || "M\xE9dico", "trade_cancel", "Solicita\xE7\xE3o de troca cancelada.");
-    broadcastEvent("trade_updated", { trade, shift });
-    res.json({ success: true, trade });
+    const camelTrade = toCamelCase(trade);
+    const camelShift = toCamelCase(shift);
+    broadcastEvent("trade_updated", { trade: camelTrade, shift: camelShift });
+    res.json({ success: true, trade: camelTrade });
   } catch (err) {
     console.error("[uFetal] Error canceling trade:", err);
     res.status(500).json({ error: "Erro ao cancelar troca" });
