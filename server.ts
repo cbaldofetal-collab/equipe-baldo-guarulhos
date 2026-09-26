@@ -446,8 +446,9 @@ app.post('/api/shifts', async (req: Request, res: Response) => {
       `Novo plantão [${modalityLabel} • ${calculatedHours}h] em ${date} (${start_time}-${end_time}) para ${docName}.`
     );
 
-    broadcastEvent('shift_created', { shift: newShift });
-    res.status(201).json(newShift);
+    const camelShift = toCamelCase(newShift);
+    broadcastEvent('shift_created', { shift: camelShift });
+    res.status(201).json(camelShift);
   } catch (err) {
     console.error('[uFetal] Error creating shift:', err);
     res.status(500).json({ error: 'Erro ao criar plantão' });
@@ -556,8 +557,9 @@ app.put('/api/shifts/:id', async (req: Request, res: Response) => {
       `Plantão [${modalityLabel} • ${updated.duration_hours}h] de ${updated.date} atualizado.`
     );
 
-    broadcastEvent('shift_updated', { shift: updated });
-    res.json(updated);
+    const camelUpdated = toCamelCase(updated);
+    broadcastEvent('shift_updated', { shift: camelUpdated });
+    res.json(camelUpdated);
   } catch (err) {
     console.error('[uFetal] Error updating shift:', err);
     res.status(500).json({ error: 'Erro ao atualizar plantão' });
@@ -714,8 +716,9 @@ app.post('/api/shifts/:id/replicate', async (req: Request, res: Response) => {
       `Escala de ${doctorName} replicada para ${months} mês(es)`
     );
 
-    broadcastEvent('shifts_replicated', { originalShift, createdShifts, months });
-    res.json({ success: true, createdCount: createdShifts.length, shifts: createdShifts });
+    const camelCreatedShifts = toCamelCase(createdShifts);
+    broadcastEvent('shifts_replicated', { originalShift, createdShifts: camelCreatedShifts, months });
+    res.json({ success: true, createdCount: camelCreatedShifts.length, shifts: camelCreatedShifts });
   } catch (err) {
     console.error('[uFetal] Error replicating shift:', err);
     res.status(500).json({ error: 'Erro ao replicar escala' });
@@ -856,8 +859,10 @@ app.post('/api/trades/:id/accept', async (req: Request, res: Response) => {
     }
 
     await addAuditLog(acceptingDoc.name, 'trade_accept', `Troca aceita por ${acceptingDoc.name}.`);
-    broadcastEvent('trade_updated', { trade, shift });
-    res.json({ trade, shift });
+    const camelTrade = toCamelCase(trade);
+    const camelShift = toCamelCase(shift);
+    broadcastEvent('trade_updated', { trade: camelTrade, shift: camelShift });
+    res.json({ trade: camelTrade, shift: camelShift });
   } catch (err) {
     console.error('[uFetal] Error accepting trade:', err);
     res.status(500).json({ error: 'Erro ao aceitar troca' });
@@ -886,8 +891,10 @@ app.post('/api/trades/:id/reject', async (req: Request, res: Response) => {
 
     const { data: fromDoc } = await supabase.from('doctors').select('name').eq('id', trade.from_doctor_id).single();
     await addAuditLog(fromDoc?.name || 'Médico', 'trade_reject', 'Solicitação de troca rejeitada.');
-    broadcastEvent('trade_updated', { trade, shift });
-    res.json({ success: true, trade });
+    const camelTrade = toCamelCase(trade);
+    const camelShift = toCamelCase(shift);
+    broadcastEvent('trade_updated', { trade: camelTrade, shift: camelShift });
+    res.json({ success: true, trade: camelTrade });
   } catch (err) {
     console.error('[uFetal] Error rejecting trade:', err);
     res.status(500).json({ error: 'Erro ao rejeitar troca' });
@@ -916,8 +923,10 @@ app.post('/api/trades/:id/cancel', async (req: Request, res: Response) => {
 
     const { data: fromDoc } = await supabase.from('doctors').select('name').eq('id', trade.from_doctor_id).single();
     await addAuditLog(fromDoc?.name || 'Médico', 'trade_cancel', 'Solicitação de troca cancelada.');
-    broadcastEvent('trade_updated', { trade, shift });
-    res.json({ success: true, trade });
+    const camelTrade = toCamelCase(trade);
+    const camelShift = toCamelCase(shift);
+    broadcastEvent('trade_updated', { trade: camelTrade, shift: camelShift });
+    res.json({ success: true, trade: camelTrade });
   } catch (err) {
     console.error('[uFetal] Error canceling trade:', err);
     res.status(500).json({ error: 'Erro ao cancelar troca' });
