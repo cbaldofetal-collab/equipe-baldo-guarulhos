@@ -793,6 +793,22 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               >
                 Cancelar
               </button>
+              {shiftToEdit && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Tem certeza que deseja deletar este plantão?')) {
+                      onDeleteShift(shiftToEdit.id);
+                      onClose();
+                    }
+                  }}
+                  className="flex items-center gap-1 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 text-xs font-semibold transition cursor-pointer"
+                  title="Deletar este plantão"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Deletar
+                </button>
+              )}
               {!shiftToEdit && getNextAvailableLocation() && (
                 <button
                   type="button"
