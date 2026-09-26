@@ -77,6 +77,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   const [additionalLocations, setAdditionalLocations] = useState<string[]>([]);
   const [doctorId, setDoctorId] = useState<string | ''>('');
   const [notes, setNotes] = useState('');
+  const [validationError, setValidationError] = useState<string>('');
 
   // Trade request inline mode
   const [isTradeMode, setIsTradeMode] = useState(false);
@@ -221,24 +222,31 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   };
 
   const validateNoDoctorConflict = (): boolean => {
-    if (!doctorId || !shifts) return true; // Only validate if doctor selected
+    setValidationError('');
 
-    const allLocations = [location, ...additionalLocations];
+    if (!doctorId) {
+      return true; // Only validate if doctor selected
+    }
 
-    for (const loc of allLocations) {
-      const conflict = shifts.find(s =>
-        s.doctorId === doctorId &&
-        s.startTime === startTime &&
-        s.shiftType === shiftType &&
-        s.id !== shiftToEdit?.id // Ignore the shift being edited
-      );
+    if (!shifts || shifts.length === 0) {
+      return true; // No shifts yet, no conflicts possible
+    }
 
-      if (conflict) {
-        alert(
-          `Dr(a). ${doctors.find(d => d.id === doctorId)?.name || 'Médico'} já tem um plantão de ${shiftType} neste horário.\n\nSelecione outro médico ou deixe esta sala como vago (Plantão Vago).`
-        );
-        return false;
-      }
+    // Check if this doctor already has a shift at same startTime + shiftType
+    const conflict = shifts.find(s =>
+      s.doctorId === doctorId &&
+      s.startTime === startTime &&
+      s.shiftType === shiftType &&
+      s.date === date && // Also check same date!
+      s.id !== shiftToEdit?.id // Ignore the shift being edited
+    );
+
+    if (conflict) {
+      const doctorName = doctors.find(d => d.id === doctorId)?.name || 'Médico';
+      const errorMsg = `Dr(a). ${doctorName} já tem um plantão de ${shiftType} neste horário.\n\nSelecione outro médico ou deixe esta sala como vago.`;
+      setValidationError(errorMsg);
+      console.error('Doctor conflict detected:', { doctorId, startTime, shiftType, date, conflict });
+      return false;
     }
 
     return true;
