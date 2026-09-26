@@ -1,0 +1,76 @@
+{
+  "doctors": [
+    {
+      "id": "doc-baldo",
+      "name": "Dr. Carlos Baldo",
+      "crm": "CRM 142.857-SP",
+      "phone": "(11) 98765-4321",
+      "email": "cbaldo.fetal@gmail.com",
+      "specialty": "Medicina Fetal & Cirurgia Fetal",
+      "color": "#0d9488",
+      "initials": "CB",
+      "isCoordinator": true
+    },
+    {
+      "id": "doc-mariana",
+      "name": "Dra. Mariana Silveira",
+      "crm": "CRM 158.320-SP",
+      "phone": "(11) 97654-3210",
+      "email": "mariana.silveira@ufetal.med.br",
+      "specialty": "Procedimentos Invasivos & Rastreio Fetal",
+      "color": "#0284c7",
+      "initials": "MS"
+    },
+    {
+      "id": "doc-felipe",
+      "name": "Dr. Felipe Rocha",
+      "crm": "CRM 139.410-SP",
+      "phone": "(11) 96543-2109",
+      "email": "felipe.rocha@ufetal.med.br",
+      "specialty": "Dopplerfluxometria & Vitalidade Fetal",
+      "color": "#6366f1",
+      "initials": "FR"
+    },
+    {
+      "id": "doc-beatriz",
+      "name": "Dra. Beatriz Santos",
+      "crm": "CRM 167.890-SP",
+      "phone": "(11) 95432-1098",
+      "email": "beatriz.santos@ufetal.med.br",
+      "specialty": "Ecocardiografia Fetal",
+      "color": "#e11d48",
+      "initials": "BS"
+    },
+    {
+      "id": "doc-lucas",
+      "name": "Dr. Lucas Azevedo",
+      "crm": "CRM 175.204-SP",
+      "phone": "(11) 94321-0987",
+      "email": "lucas.azevedo@ufetal.med.br",
+      "specialty": "Neurosonografia Fetal & USG 3D/4D",
+      "color": "#d97706",
+      "initials": "LA"
+    },
+    {
+      "id": "doc-camila",
+      "name": "Dra. Camila Nogueira",
+      "crm": "CRM 182.400-SP",
+      "email": "camila.nogueira@ufetal.med.br",
+      "phone": "(11) 93210-9876",
+      "specialty": "Gestação de Alto Risco & USG Morfológica",
+      "color": "#8b5cf6",
+      "initials": "CN"
+    }
+  ],
+  "shifts": [],
+  "trades": [],
+  "auditLogs": [
+    {
+      "id": "log-blank-start",
+      "timestamp": "2026-09-10T15:00:00.000Z",
+      "authorName": "Coordenação uFetal",
+      "action": "init",
+      "summary": "Escala limpa em branco para testes e preenchimento oficial pela equipe médica."
+    }
+  ]
+}

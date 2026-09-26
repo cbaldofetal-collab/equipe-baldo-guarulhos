@@ -1,0 +1,7 @@
+{
+  "name": "uFetal - Escala de Plantão Medicina Fetal",
+  "description": "Aplicativo colaborativo em tempo real para gestão de horários e escala de plantões da equipe de Medicina Fetal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
