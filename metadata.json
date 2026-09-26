@@ -1,6 +1,6 @@
 {
-  "name": "uFetal - Escala de Plantão Medicina Fetal",
-  "description": "Aplicativo colaborativo em tempo real para gestão de horários e escala de plantões da equipe de Medicina Fetal.",
+  "name": "Equipe Baldo São Caetano - Escala de Plantão",
+  "description": "Aplicativo colaborativo em tempo real para gestão de horários e escala de plantões - Hospital Dor São Caetano.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

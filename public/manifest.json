@@ -1,7 +1,7 @@
 {
-  "name": "uFetal Analía Franco",
-  "short_name": "uFetal",
-  "description": "Sistema de Escala de Plantão e Procedimentos em Tempo Real - Medicina Fetal",
+  "name": "Equipe Baldo São Caetano",
+  "short_name": "Equipe Baldo",
+  "description": "Sistema de Escala de Plantão - Hospital Dor São Caetano",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
