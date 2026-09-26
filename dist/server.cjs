@@ -309,7 +309,7 @@ app.post("/api/shifts", async (req, res) => {
       modality: shiftModality,
       duration_hours: calculatedHours,
       sector: sector || "Medicina Fetal - Plant\xE3o e Sala de Parto",
-      location: location || "Maternidade Central - Unidade Fetal",
+      location: location || "Sala 1",
       doctor_id: doctor_id || null,
       status: doctor_id ? "confirmed" : "open",
       notes: notes || "",

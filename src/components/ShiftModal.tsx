@@ -43,11 +43,8 @@ const SECTOR_OPTIONS: ShiftSector[] = [
 ];
 
 const LOCATION_OPTIONS = [
-  'Maternidade Central - Unidade Fetal',
-  'Hospital da Mulher - Bloco Obstétrico',
-  'Centro Diagnóstico Fetal - Ambulatório',
-  'Maternidade Santa Helena - Sobreaviso',
-  'Hospital Samaritano - Berçário de Alto Risco',
+  'Sala 1',
+  'Sala 2',
 ];
 
 export const ShiftModal: React.FC<ShiftModalProps> = ({
@@ -70,7 +67,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   const [startTime, setStartTime] = useState('07:00');
   const [endTime, setEndTime] = useState('13:00');
   const [sector, setSector] = useState<ShiftSector>('Medicina Fetal - Plantão e Sala de Parto');
-  const [location, setLocation] = useState('Maternidade Central - Unidade Fetal');
+  const [location, setLocation] = useState('Sala 1');
   const [doctorId, setDoctorId] = useState<string | ''>('');
   const [notes, setNotes] = useState('');
 
