@@ -389,8 +389,170 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
 
                 {/* Shift badges list inside day cell */}
                 <div className="space-y-1 flex-1 overflow-y-auto max-h-[105px] pr-0.5 custom-scrollbar">
-                  {dayShifts.map(shift => {
-                    const doc = shift.doctorId ? docMap.get(shift.doctorId) : null;
+                  {(() => {
+                    // Group shifts by startTime + shiftType to show rooms together
+                    const groupedShifts = dayShifts.reduce((acc, shift) => {
+                      const key = `${shift.startTime}-${shift.shiftType}`;
+                      if (!acc[key]) acc[key] = [];
+                      acc[key].push(shift);
+                      return acc;
+                    }, {} as Record<string, typeof dayShifts>);
+
+                    return Object.values(groupedShifts).map(groupedShifts => {
+                      // If only one shift in group, render normally
+                      if (groupedShifts.length === 1) {
+                        const shift = groupedShifts[0];
+                        const doc = shift.doctorId ? docMap.get(shift.doctorId) : null;
+                        const isCurrentUser = shift.doctorId === currentDoctor.id;
+                        const isOpen = shift.doctorId === null;
+                        const isTrade = shift.status === 'trade_requested';
+                        const isSobreaviso = shift.shiftType === 'sobreaviso';
+                        const shiftModality = shift.modality || (isSobreaviso ? 'ps' : 'agenda');
+                        const hours = typeof shift.durationHours === 'number' && shift.durationHours > 0
+                          ? shift.durationHours
+                          : calculateHours(shift.startTime, shift.endTime, shift.shiftType);
+
+                        let timeLabel = `${shift.startTime}-${shift.endTime}`;
+                        if (isSobreaviso) timeLabel = 'Sobreaviso';
+                        else if (shift.shiftType === 'plantao_12d') timeLabel = '12h Diurno';
+                        else if (shift.shiftType === 'plantao_12n') timeLabel = '12h Noturno';
+                        else if (shift.shiftType === 'plantao_24h') timeLabel = '24h';
+                        else if (shift.shiftType === 'manha') timeLabel = 'Manhã';
+                        else if (shift.shiftType === 'tarde') timeLabel = 'Tarde';
+
+                        return (
+                          <div
+                            key={shift.id}
+                            onClick={() => onSelectShift(shift)}
+                            className={`text-[11px] p-1.5 rounded-lg border transition cursor-pointer text-left relative group/item shadow-xs ${
+                              isOpen
+                                ? 'bg-amber-50/90 border-amber-300 hover:bg-amber-100 text-amber-900 border-dashed animate-pulse'
+                                : isTrade
+                                ? 'bg-amber-50 border-amber-400 text-amber-900 hover:border-amber-500'
+                                : isSobreaviso
+                                ? 'bg-rose-50 border-rose-200 text-rose-900 hover:border-rose-300'
+                                : isCurrentUser
+                                ? 'bg-teal-50/90 border-teal-300 text-teal-950 font-medium hover:border-teal-400 ring-1 ring-teal-400/30'
+                                : 'bg-white border-slate-200 hover:border-slate-300 text-slate-800'
+                            }`}
+                          >
+                            {/* Header: Type / Time & Status icon */}
+                            <div className="flex items-center justify-between gap-1 leading-none mb-1">
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className={`px-1 py-0.2 rounded text-[8.5px] font-black uppercase tracking-tight shrink-0 ${
+                                  shiftModality === 'ps'
+                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                    : 'bg-teal-100 text-teal-800 border border-teal-200'
+                                }`}>
+                                  {shiftModality === 'ps' ? 'PS' : 'Agenda'}
+                                </span>
+                                <span className={`font-semibold text-[10px] truncate ${
+                                  isSobreaviso ? 'text-rose-700 font-bold' : isOpen ? 'text-amber-800' : 'text-slate-600'
+                                }`}>
+                                  {timeLabel}
+                                </span>
+                              </div>
+
+                              <span className="text-[9px] font-bold text-slate-400 shrink-0">
+                                {hours}h
+                              </span>
+
+                              {isOpen && (
+                                <span className="text-[9px] bg-amber-200 text-amber-900 px-1 rounded font-bold uppercase">
+                                  Vago
+                                </span>
+                              )}
+
+                              {isTrade && (
+                                <ArrowLeftRight className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                              )}
+                            </div>
+
+                            {/* Doctor Name / Claim Button */}
+                            {isOpen ? (
+                              <div className="flex items-center justify-between gap-1 pt-0.5">
+                                <span className="text-amber-800 font-bold truncate">Assumir Vaga</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onClaimShift(shift);
+                                  }}
+                                  className="px-1.5 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[9px] font-bold shrink-0 transition"
+                                >
+                                  Eu pego
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ backgroundColor: doc?.color || '#0d9488' }}
+                                />
+                                <span className={`truncate font-medium ${isCurrentUser ? 'text-teal-900 font-bold' : 'text-slate-800'}`}>
+                                  {doc?.name ? doc.name.replace('Dr. ', '').replace('Dra. ', '') : (shift.doctorId ? 'Médico' : 'Plantão Vago')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      // Multiple shifts in group - render grouped card
+                      const firstShift = groupedShifts[0];
+                      const shiftModality = firstShift.modality || (firstShift.shiftType === 'sobreaviso' ? 'ps' : 'agenda');
+                      const hours = typeof firstShift.durationHours === 'number' && firstShift.durationHours > 0
+                        ? firstShift.durationHours
+                        : calculateHours(firstShift.startTime, firstShift.endTime, firstShift.shiftType);
+
+                      let timeLabel = `${firstShift.startTime}-${firstShift.endTime}`;
+                      if (firstShift.shiftType === 'plantao_12d') timeLabel = '12h Diurno';
+                      else if (firstShift.shiftType === 'plantao_12n') timeLabel = '12h Noturno';
+                      else if (firstShift.shiftType === 'plantao_24h') timeLabel = '24h';
+                      else if (firstShift.shiftType === 'manha') timeLabel = 'Manhã';
+                      else if (firstShift.shiftType === 'tarde') timeLabel = 'Tarde';
+
+                      return (
+                        <div
+                          key={`group-${firstShift.startTime}-${firstShift.shiftType}`}
+                          className="text-[11px] p-1.5 rounded-lg border bg-white border-slate-200 hover:border-slate-300 text-slate-800 transition cursor-default text-left shadow-xs"
+                        >
+                          {/* Header: Type / Time */}
+                          <div className="flex items-center justify-between gap-1 leading-none mb-1">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className={`px-1 py-0.2 rounded text-[8.5px] font-black uppercase tracking-tight shrink-0 ${
+                                shiftModality === 'ps'
+                                  ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                  : 'bg-teal-100 text-teal-800 border border-teal-200'
+                              }`}>
+                                {shiftModality === 'ps' ? 'PS' : 'Agenda'}
+                              </span>
+                              <span className="font-semibold text-[10px] text-slate-600">
+                                {timeLabel}
+                              </span>
+                            </div>
+                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1 rounded font-bold shrink-0">
+                              {groupedShifts.length}
+                            </span>
+                          </div>
+
+                          {/* List of rooms/doctors */}
+                          <div className="space-y-0.5">
+                            {groupedShifts.map(shift => {
+                              const doc = shift.doctorId ? docMap.get(shift.doctorId) : null;
+                              const docName = doc?.name ? doc.name.replace('Dr. ', '').replace('Dra. ', '') : (shift.doctorId ? 'Médico' : 'Vago');
+                              return (
+                                <div key={shift.id} className="flex items-center gap-1.5 text-[9px] px-1 py-0.5 bg-slate-50 rounded">
+                                  <span className="text-slate-500 font-semibold shrink-0">{shift.location}</span>
+                                  <span className="text-slate-700 truncate">{docName}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
                     const isCurrentUser = shift.doctorId === currentDoctor.id;
                     const isOpen = shift.doctorId === null;
                     const isTrade = shift.status === 'trade_requested';
