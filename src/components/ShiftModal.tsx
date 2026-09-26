@@ -26,6 +26,7 @@ interface ShiftModalProps {
   defaultDate?: string;
   doctors: Doctor[];
   currentDoctor: Doctor;
+  shifts?: Shift[];
   onSaveShift: (shiftData: Partial<Shift>) => void;
   onDeleteShift: (shiftId: string) => void;
   onRequestDeleteConfirmation: (shiftId: string) => void;
@@ -218,6 +219,30 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     return null;
   };
 
+  const validateNoDoctorConflict = (): boolean => {
+    if (!doctorId || !shifts) return true; // Only validate if doctor selected
+
+    const allLocations = [location, ...additionalLocations];
+
+    for (const loc of allLocations) {
+      const conflict = shifts.find(s =>
+        s.doctorId === doctorId &&
+        s.startTime === startTime &&
+        s.shiftType === shiftType &&
+        s.id !== shiftToEdit?.id // Ignore the shift being edited
+      );
+
+      if (conflict) {
+        alert(
+          `Dr(a). ${doctors.find(d => d.id === doctorId)?.name || 'Médico'} já tem um plantão de ${shiftType} neste horário.\n\nSelecione outro médico ou deixe esta sala como vago (Plantão Vago).`
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const addAdditionalLocation = () => {
     const nextLoc = getNextAvailableLocation();
     if (nextLoc) {
@@ -232,6 +257,9 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date) return;
+
+    // Validação: Doctor não pode ter dois plantões no mesmo horário
+    if (!validateNoDoctorConflict()) return;
 
     // Validação de horário
     if (!startTime || !endTime) {

@@ -711,6 +711,7 @@ export default function App() {
             defaultDate={defaultDateForNewShift}
             doctors={doctors}
             currentDoctor={currentDoctor}
+            shifts={shifts}
             onSaveShift={handleSaveShift}
             onDeleteShift={handleDeleteShift}
             onRequestDeleteConfirmation={handleRequestDeleteConfirmation}
