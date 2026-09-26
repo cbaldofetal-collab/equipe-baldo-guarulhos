@@ -242,10 +242,10 @@ app.get('/api/events', async (req: Request, res: Response) => {
     const { data: auditLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
 
     const state = {
-      doctors: doctors || [],
-      shifts: shifts || [],
-      trades: trades || [],
-      auditLogs: auditLogs || [],
+      doctors: toCamelCase(doctors) || [],
+      shifts: toCamelCase(shifts) || [],
+      trades: toCamelCase(trades) || [],
+      auditLogs: toCamelCase(auditLogs) || [],
     };
 
     res.write(`data: ${JSON.stringify({ type: 'init', state })}\n\n`);
@@ -258,6 +258,21 @@ app.get('/api/events', async (req: Request, res: Response) => {
   });
 });
 
+// Convert snake_case to camelCase
+function toCamelCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(toCamelCase);
+  }
+  if (obj && typeof obj === 'object') {
+    return Object.keys(obj).reduce((result, key) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      result[camelKey] = toCamelCase(obj[key]);
+      return result;
+    }, {} as any);
+  }
+  return obj;
+}
+
 // GET complete state
 app.get('/api/state', async (req: Request, res: Response) => {
   try {
@@ -268,10 +283,10 @@ app.get('/api/state', async (req: Request, res: Response) => {
     const { data: auditLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
 
     res.json({
-      doctors: doctors || [],
-      shifts: shifts || [],
-      trades: trades || [],
-      auditLogs: auditLogs || [],
+      doctors: toCamelCase(doctors) || [],
+      shifts: toCamelCase(shifts) || [],
+      trades: toCamelCase(trades) || [],
+      auditLogs: toCamelCase(auditLogs) || [],
     });
   } catch (err) {
     console.error('[uFetal] Error fetching state:', err);
