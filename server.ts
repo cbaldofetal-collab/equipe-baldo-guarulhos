@@ -1001,31 +1001,26 @@ app.post('/api/debug/seed', async (req: Request, res: Response) => {
   }
 });
 
+// Serve static files from dist folder
+const distPath = path.join(process.cwd(), 'dist');
+app.use(express.static(distPath, { maxAge: '1h' }));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) {
+      console.error('[uFetal] Error serving index.html:', err);
+      res.status(500).send('Erro ao carregar aplicação');
+    }
+  });
+});
+
 // When running standalone, start listening
 if (!process.env.VERCEL) {
   initializeDatabase().then(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      createViteServer({
-        server: { middlewareMode: true },
-        appType: 'spa',
-      }).then(vite => {
-        app.use(vite.middlewares);
-        app.listen(PORT, '0.0.0.0', () => {
-          console.log(`[uFetal] Server running on http://0.0.0.0:${PORT}`);
-        });
-      }).catch(err => {
-        console.error('[uFetal] Failed to start Vite server:', err);
-      });
-    } else {
-      const distPath = path.join(process.cwd(), 'dist');
-      app.use(require('express').static(distPath));
-      app.get('*', (req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
-      });
-      app.listen(PORT, '0.0.0.0', () => {
-        console.log(`[uFetal] Server running on http://0.0.0.0:${PORT}`);
-      });
-    }
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[uFetal] Server running on http://0.0.0.0:${PORT}`);
+    });
   });
 }
 
