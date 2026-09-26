@@ -59,6 +59,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   defaultDate,
   doctors,
   currentDoctor,
+  shifts,
   onSaveShift,
   onDeleteShift,
   onRequestDeleteConfirmation,
