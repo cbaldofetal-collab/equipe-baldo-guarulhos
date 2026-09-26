@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
-import { createServer as createViteServer } from 'vite';
 
 // Initialize Supabase client
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
