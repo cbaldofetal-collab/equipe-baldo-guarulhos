@@ -348,6 +348,66 @@ app.put('/api/doctors/:id/authorize', async (req: Request, res: Response) => {
   }
 });
 
+// DELETE remove doctor from team
+app.delete('/api/doctors/:id', async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.params.id;
+    const { coordinatorId } = req.body;
+
+    if (!coordinatorId) {
+      return res.status(400).json({ error: 'coordinatorId é obrigatório' });
+    }
+
+    if (doctorId === coordinatorId) {
+      return res.status(400).json({ error: 'Você não pode remover a si mesmo(a) da equipe.' });
+    }
+
+    // Check if requester is coordinator
+    const { data: coordinator } = await supabase
+      .from('doctors')
+      .select('is_coordinator, name')
+      .eq('id', coordinatorId)
+      .single();
+
+    if (!coordinator || !coordinator.is_coordinator) {
+      return res.status(403).json({ error: 'Apenas o coordenador pode remover médicos da equipe.' });
+    }
+
+    const { data: doctorToRemove } = await supabase
+      .from('doctors')
+      .select('name')
+      .eq('id', doctorId)
+      .single();
+
+    if (!doctorToRemove) {
+      return res.status(404).json({ error: 'Médico não encontrado.' });
+    }
+
+    // Don't delete their shift history — unassign (mark as vago) instead
+    await supabase
+      .from('shifts')
+      .update({ doctor_id: null, status: 'open' })
+      .eq('doctor_id', doctorId);
+
+    const { error: deleteError } = await supabase.from('doctors').delete().eq('id', doctorId);
+    if (deleteError) {
+      return res.status(500).json({ error: 'Erro ao remover médico', details: deleteError.message });
+    }
+
+    await addAuditLog(
+      coordinator.name || 'Coordenador',
+      'doctor_removed',
+      `${doctorToRemove.name} foi removido(a) da equipe. Plantões dele(a) voltaram a ficar vagos.`
+    );
+
+    broadcastEvent('doctor_removed', { doctorId });
+    res.json({ success: true, doctorId });
+  } catch (err) {
+    console.error('[uFetal] Error removing doctor:', err);
+    res.status(500).json({ error: 'Erro ao remover médico' });
+  }
+});
+
 // POST create shift
 app.post('/api/shifts', async (req: Request, res: Response) => {
   try {
@@ -388,7 +448,7 @@ app.post('/api/shifts', async (req: Request, res: Response) => {
     }
 
     // Validate shift_type is valid enum
-    const validShiftTypes = ['manha', 'tarde', 'noite', '12h_noturno', 'plantao_24h', 'sobreaviso', 'personalizado', 'PS', 'Agenda', 'Sobreaviso', 'Outra'];
+    const validShiftTypes = ['manha', 'tarde', 'noite', 'plantao_12d', 'plantao_12n', 'plantao_24h', 'sobreaviso', 'custom'];
     if (!validShiftTypes.includes(shift_type)) {
       return res.status(400).json({ error: `Tipo de plantão inválido. Recebido: ${shift_type}` });
     }
@@ -509,7 +569,7 @@ app.put('/api/shifts/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Horário de fim inválido. Use formato HH:mm.' });
     }
     if (shift_type) {
-      const validShiftTypes = ['manha', 'tarde', 'noite', '12h_noturno', 'plantao_24h', 'sobreaviso', 'personalizado', 'PS', 'Agenda', 'Sobreaviso', 'Outra'];
+      const validShiftTypes = ['manha', 'tarde', 'noite', 'plantao_12d', 'plantao_12n', 'plantao_24h', 'sobreaviso', 'custom'];
       if (!validShiftTypes.includes(shift_type)) {
         return res.status(400).json({ error: `Tipo de plantão inválido. Recebido: ${shift_type}` });
       }

@@ -268,8 +268,10 @@ export const DayView: React.FC<DayViewProps> = ({
 
                       {/* Location & Notes */}
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                        <div className="flex items-center gap-1">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                        <div className={`flex items-center gap-1 ${
+                          shiftModality === 'ps' ? 'px-2 py-0.5 rounded-lg bg-rose-600 text-white font-bold' : ''
+                        }`}>
+                          <Building2 className={`w-3.5 h-3.5 ${shiftModality === 'ps' ? 'text-white' : 'text-slate-400'}`} />
                           <span>{shift.location}</span>
                         </div>
                         {shift.notes && (

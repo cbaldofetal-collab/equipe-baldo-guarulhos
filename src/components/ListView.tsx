@@ -366,8 +366,10 @@ export const ListView: React.FC<ListViewProps> = ({
 
                       {/* Location */}
                       <td className="py-3 px-4 whitespace-nowrap text-slate-600">
-                        <div className="flex items-center gap-1">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                        <div className={`flex items-center gap-1 w-fit ${
+                          shiftModality === 'ps' ? 'px-2 py-0.5 rounded-lg bg-rose-600 text-white font-bold' : ''
+                        }`}>
+                          <Building2 className={`w-3.5 h-3.5 ${shiftModality === 'ps' ? 'text-white' : 'text-slate-400'}`} />
                           <span>{shift.location}</span>
                         </div>
                       </td>

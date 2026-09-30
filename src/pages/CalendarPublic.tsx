@@ -9,7 +9,7 @@ interface CalendarPublicProps {
 }
 
 export const CalendarPublic: React.FC<CalendarPublicProps> = ({ shifts, doctors }) => {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 10));
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const getDoctorName = (doctorId: string | null) => {
     if (!doctorId) return 'Vago';
@@ -111,16 +111,21 @@ export const CalendarPublic: React.FC<CalendarPublicProps> = ({ shifts, doctors 
                     <>
                       <div className="font-semibold text-slate-900 text-sm mb-2">{day}</div>
                       <div className="space-y-1">
-                        {dayShifts.map(shift => (
-                          <div
-                            key={shift.id}
-                            className="text-[10px] p-1.5 rounded-lg text-white font-medium truncate"
-                            style={{ backgroundColor: getDoctorColor(shift.doctor_id) }}
-                            title={`${getDoctorName(shift.doctor_id)} - ${shift.start_time}`}
-                          >
-                            {getDoctorName(shift.doctor_id).split(' ')[0]}
-                          </div>
-                        ))}
+                        {dayShifts.map(shift => {
+                          const isOpen = !shift.doctorId;
+                          return (
+                            <div
+                              key={shift.id}
+                              className={`text-[10px] p-1.5 rounded-lg font-medium truncate ${
+                                isOpen ? 'bg-slate-200 text-slate-600 border border-slate-300' : 'text-white'
+                              }`}
+                              style={isOpen ? undefined : { backgroundColor: getDoctorColor(shift.doctorId) }}
+                              title={`${getDoctorName(shift.doctorId)} - ${shift.startTime}`}
+                            >
+                              {getDoctorName(shift.doctorId).split(' ')[0]}
+                            </div>
+                          );
+                        })}
                         {dayShifts.length === 0 && (
                           <div className="text-[10px] text-slate-400 font-medium py-1">-</div>
                         )}

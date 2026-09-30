@@ -544,9 +544,17 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
                                 <div
                                   key={shift.id}
                                   onClick={() => onSelectShift(shift)}
-                                  className="flex items-center gap-1.5 text-[9px] px-1 py-0.5 bg-slate-50 rounded hover:bg-slate-100 cursor-pointer transition"
+                                  className={`flex items-center gap-1.5 text-[9px] px-1 py-0.5 rounded cursor-pointer transition ${
+                                    shiftModality === 'ps'
+                                      ? 'bg-rose-50 hover:bg-rose-100'
+                                      : 'bg-slate-50 hover:bg-slate-100'
+                                  }`}
                                 >
-                                  <span className="text-slate-500 font-semibold shrink-0">{shift.location}</span>
+                                  <span className={`font-bold shrink-0 px-1 rounded ${
+                                    shiftModality === 'ps'
+                                      ? 'bg-rose-600 text-white'
+                                      : 'text-slate-500'
+                                  }`}>{shift.location}</span>
                                   <span className="text-slate-700 truncate">{docName}</span>
                                 </div>
                               );

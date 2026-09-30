@@ -357,9 +357,11 @@ export const WeekView: React.FC<WeekViewProps> = ({
                         )}
 
                         {/* Location */}
-                        <div className="mt-2 pt-1.5 border-t border-slate-100/80 flex items-center gap-1 text-[10px] text-slate-400">
-                          <MapPin className="w-3 h-3 shrink-0" />
-                          <span className="truncate">{shift.location}</span>
+                        <div className={`mt-2 pt-1.5 border-t border-slate-100/80 flex items-center gap-1 text-[10px] ${
+                          shiftModality === 'ps' ? 'text-rose-700 font-bold' : 'text-slate-400'
+                        }`}>
+                          <MapPin className={`w-3 h-3 shrink-0 ${shiftModality === 'ps' ? 'text-rose-600' : ''}`} />
+                          <span className={`truncate ${shiftModality === 'ps' ? 'bg-rose-100 border border-rose-200 px-1 rounded' : ''}`}>{shift.location}</span>
                         </div>
                       </div>
                     );

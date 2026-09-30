@@ -268,6 +268,41 @@ app.put("/api/doctors/:id/authorize", async (req, res) => {
     res.status(500).json({ error: "Erro ao autorizar m\xE9dico" });
   }
 });
+app.delete("/api/doctors/:id", async (req, res) => {
+  try {
+    const doctorId = req.params.id;
+    const { coordinatorId } = req.body;
+    if (!coordinatorId) {
+      return res.status(400).json({ error: "coordinatorId \xE9 obrigat\xF3rio" });
+    }
+    if (doctorId === coordinatorId) {
+      return res.status(400).json({ error: "Voc\xEA n\xE3o pode remover a si mesmo(a) da equipe." });
+    }
+    const { data: coordinator } = await supabase.from("doctors").select("is_coordinator, name").eq("id", coordinatorId).single();
+    if (!coordinator || !coordinator.is_coordinator) {
+      return res.status(403).json({ error: "Apenas o coordenador pode remover m\xE9dicos da equipe." });
+    }
+    const { data: doctorToRemove } = await supabase.from("doctors").select("name").eq("id", doctorId).single();
+    if (!doctorToRemove) {
+      return res.status(404).json({ error: "M\xE9dico n\xE3o encontrado." });
+    }
+    await supabase.from("shifts").update({ doctor_id: null, status: "open" }).eq("doctor_id", doctorId);
+    const { error: deleteError } = await supabase.from("doctors").delete().eq("id", doctorId);
+    if (deleteError) {
+      return res.status(500).json({ error: "Erro ao remover m\xE9dico", details: deleteError.message });
+    }
+    await addAuditLog(
+      coordinator.name || "Coordenador",
+      "doctor_removed",
+      `${doctorToRemove.name} foi removido(a) da equipe. Plant\xF5es dele(a) voltaram a ficar vagos.`
+    );
+    broadcastEvent("doctor_removed", { doctorId });
+    res.json({ success: true, doctorId });
+  } catch (err) {
+    console.error("[uFetal] Error removing doctor:", err);
+    res.status(500).json({ error: "Erro ao remover m\xE9dico" });
+  }
+});
 app.post("/api/shifts", async (req, res) => {
   try {
     const {
@@ -298,7 +333,7 @@ app.post("/api/shifts", async (req, res) => {
     if (!/^\d{2}:\d{2}$/.test(start_time) || !/^\d{2}:\d{2}$/.test(end_time)) {
       return res.status(400).json({ error: "Hor\xE1rio inv\xE1lido. Use formato HH:mm." });
     }
-    const validShiftTypes = ["manha", "tarde", "noite", "12h_noturno", "plantao_24h", "sobreaviso", "personalizado", "PS", "Agenda", "Sobreaviso", "Outra"];
+    const validShiftTypes = ["manha", "tarde", "noite", "plantao_12d", "plantao_12n", "plantao_24h", "sobreaviso", "custom"];
     if (!validShiftTypes.includes(shift_type)) {
       return res.status(400).json({ error: `Tipo de plant\xE3o inv\xE1lido. Recebido: ${shift_type}` });
     }
@@ -393,7 +428,7 @@ app.put("/api/shifts/:id", async (req, res) => {
       return res.status(400).json({ error: "Hor\xE1rio de fim inv\xE1lido. Use formato HH:mm." });
     }
     if (shift_type) {
-      const validShiftTypes = ["manha", "tarde", "noite", "12h_noturno", "plantao_24h", "sobreaviso", "personalizado", "PS", "Agenda", "Sobreaviso", "Outra"];
+      const validShiftTypes = ["manha", "tarde", "noite", "plantao_12d", "plantao_12n", "plantao_24h", "sobreaviso", "custom"];
       if (!validShiftTypes.includes(shift_type)) {
         return res.status(400).json({ error: `Tipo de plant\xE3o inv\xE1lido. Recebido: ${shift_type}` });
       }

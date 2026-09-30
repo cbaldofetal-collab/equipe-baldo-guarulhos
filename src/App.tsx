@@ -25,7 +25,7 @@ import { AuthorizationModal } from './components/AuthorizationModal';
 import { AuditFeedDrawer } from './components/AuditFeedDrawer';
 import { LiveToast } from './components/LiveToast';
 import { useShiftReminders } from './hooks/useShiftReminders';
-import { BellRing, CheckCircle2, Trash2 } from 'lucide-react';
+import { BellRing, CheckCircle2, Trash2, UserMinus } from 'lucide-react';
 
 const DEFAULT_CURRENT_DATE = new Date(2026, 8, 10); // Sept 10, 2026
 
@@ -56,6 +56,7 @@ export default function App() {
   const [dismissBanner, setDismissBanner] = useState(false);
   const [liveToast, setLiveToast] = useState<string | null>(null);
   const [deleteConfirmShiftId, setDeleteConfirmShiftId] = useState<string | null>(null);
+  const [deleteConfirmDoctor, setDeleteConfirmDoctor] = useState<{ id: string; name: string; shiftCount: number } | null>(null);
 
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -203,6 +204,9 @@ export default function App() {
               setAuditLogs(prev => [payload.auditLog, ...prev]);
               showToast(payload.auditLog.summary);
             }
+          } else if (payload.type === 'doctor_removed' && payload.doctorId) {
+            setDoctors(prev => prev.filter(d => d.id !== payload.doctorId));
+            setShifts(prev => prev.map(s => s.doctorId === payload.doctorId ? { ...s, doctorId: null, status: 'open' } : s));
           } else if (payload.type === 'doctor_authorized') {
             const { doctorId, authorized } = payload;
             setDoctors(prev => prev.map(d => d.id === doctorId ? { ...d, authorized_to_manage: authorized } : d));
@@ -498,7 +502,7 @@ export default function App() {
       });
       if (res.ok) {
         const newDoc = await res.json();
-        setDoctors(prev => [...prev, newDoc]);
+        setDoctors(prev => prev.some(d => d.id === newDoc.id) ? prev : [...prev, newDoc]);
         showToast(`${newDoc.name} adicionado à equipe uFetal!`);
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -506,6 +510,41 @@ export default function App() {
       }
     } catch (err: any) {
       showToast(`Erro: ${err.message || 'Falha ao adicionar médico'}`);
+    }
+  };
+
+  const handleRequestRemoveDoctor = (doc: Doctor, shiftCount: number) => {
+    setDeleteConfirmDoctor({ id: doc.id, name: doc.name, shiftCount });
+  };
+
+  const handleCancelRemoveDoctor = () => {
+    setDeleteConfirmDoctor(null);
+  };
+
+  const handleConfirmRemoveDoctor = async () => {
+    if (!deleteConfirmDoctor) return;
+    const doctorId = deleteConfirmDoctor.id;
+    setDeleteConfirmDoctor(null);
+    await handleRemoveDoctor(doctorId);
+  };
+
+  const handleRemoveDoctor = async (doctorId: string) => {
+    try {
+      const res = await fetch(`/api/doctors/${doctorId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coordinatorId: currentDoctor?.id }),
+      });
+      if (res.ok) {
+        setDoctors(prev => prev.filter(d => d.id !== doctorId));
+        setShifts(prev => prev.map(s => s.doctorId === doctorId ? { ...s, doctorId: null, status: 'open' } : s));
+        showToast('✅ Médico removido da equipe.');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        showToast(`❌ Erro: ${errorData.error || 'Falha ao remover médico'}`);
+      }
+    } catch (err: any) {
+      showToast(`❌ Erro: ${err.message || 'Falha ao remover médico'}`);
     }
   };
 
@@ -760,6 +799,44 @@ export default function App() {
             </div>
           )}
 
+          {/* Remove Doctor Confirmation Modal */}
+          {deleteConfirmDoctor && (
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+              <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+                    <UserMinus className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-base text-slate-900">
+                      Remover {deleteConfirmDoctor.name} da equipe?
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Esta ação não pode ser desfeita.
+                      {deleteConfirmDoctor.shiftCount > 0 && (
+                        <> {deleteConfirmDoctor.shiftCount} plantão(ões) deste mês ficarão vagos e precisarão ser reatribuídos.</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button
+                    onClick={handleCancelRemoveDoctor}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmRemoveDoctor}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <TradeRequestsModal
             isOpen={isTradesModalOpen}
             onClose={() => setIsTradesModalOpen(false)}
@@ -781,6 +858,7 @@ export default function App() {
             currentDate={currentDate}
             onSelectDoctor={setCurrentDoctor}
             onAddDoctor={handleAddDoctor}
+            onRequestRemoveDoctor={handleRequestRemoveDoctor}
           />
 
           <ExportModal

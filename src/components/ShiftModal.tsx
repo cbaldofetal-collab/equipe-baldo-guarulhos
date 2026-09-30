@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Calendar, 
@@ -14,7 +14,8 @@ import {
   Activity,
   ClipboardList,
   Plus,
-  Minus
+  Minus,
+  Repeat
 } from 'lucide-react';
 import { Shift, Doctor, ShiftType, ShiftSector, ShiftModality } from '../types';
 import { formatDateToPt, calculateHours } from '../utils/date';
@@ -43,7 +44,7 @@ const SECTOR_OPTIONS: ShiftSector[] = [
   'Procedimentos Invasivos (Amnio/Cordocentese)',
 ];
 
-const LOCATION_OPTIONS = [
+const AGENDA_LOCATION_OPTIONS = [
   'Sala 1',
   'Sala 2',
   'Sala 3',
@@ -51,6 +52,15 @@ const LOCATION_OPTIONS = [
   'Sala 5',
   'Sala 6',
 ];
+
+const PS_LOCATION_OPTIONS = [
+  'Sala PS 1',
+  'Sala PS 2',
+  'Sala PS 3',
+];
+
+const getLocationOptions = (modality: ShiftModality) =>
+  modality === 'ps' ? PS_LOCATION_OPTIONS : AGENDA_LOCATION_OPTIONS;
 
 export const ShiftModal: React.FC<ShiftModalProps> = ({
   isOpen,
@@ -73,16 +83,37 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   const [startTime, setStartTime] = useState('07:00');
   const [endTime, setEndTime] = useState('13:00');
   const [sector, setSector] = useState<ShiftSector>('Medicina Fetal - Plantão e Sala de Parto');
-  const [location, setLocation] = useState('Sala 1');
+  const [location, setLocation] = useState(PS_LOCATION_OPTIONS[0]);
   const [additionalLocations, setAdditionalLocations] = useState<string[]>([]);
   const [doctorId, setDoctorId] = useState<string | ''>('');
   const [notes, setNotes] = useState('');
   const [validationError, setValidationError] = useState<string>('');
+  const formBodyRef = useRef<HTMLFormElement>(null);
+
+  const scrollFormToTop = () => {
+    formBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Recurrence: 0 = does not repeat. Otherwise, repeat every N weeks.
+  const [repeatIntervalWeeks, setRepeatIntervalWeeks] = useState<number>(0);
+  const [repeatCount, setRepeatCount] = useState<number>(4);
 
   // Trade request inline mode
   const [isTradeMode, setIsTradeMode] = useState(false);
   const [tradeNote, setTradeNote] = useState('');
   const [tradeTargetDocId, setTradeTargetDocId] = useState('');
+
+  // Room pool depends on modality: PS and Agenda never share the same rooms
+  const locationOptions = getLocationOptions(modality);
+
+  const handleModalityChange = (newModality: ShiftModality) => {
+    setModality(newModality);
+    const newOptions = getLocationOptions(newModality);
+    if (!newOptions.includes(location)) {
+      setLocation(newOptions[0]);
+    }
+    setAdditionalLocations([]);
+  };
 
   useEffect(() => {
     if (shiftToEdit) {
@@ -101,6 +132,8 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       setDoctorId(shiftToEdit.doctorId || '');
       setNotes(shiftToEdit.notes || '');
       setAdditionalLocations([]);
+      setRepeatIntervalWeeks(0);
+      setRepeatCount(4);
       setIsTradeMode(false);
       setTradeNote('');
     } else {
@@ -113,16 +146,26 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       setStartTime('07:00');
       setEndTime('13:00');
       setSector('Medicina Fetal - Plantão e Sala de Parto');
-      setLocation('Maternidade Central - Unidade Fetal');
+      setLocation(PS_LOCATION_OPTIONS[0]);
       setDoctorId(currentDoctor.id);
       setNotes('');
       setAdditionalLocations([]);
+      setRepeatIntervalWeeks(0);
+      setRepeatCount(4);
       setIsTradeMode(false);
       setTradeNote('');
     }
   }, [shiftToEdit, defaultDate, currentDoctor.id, isOpen]);
 
   if (!isOpen) return null;
+
+  // Adds N weeks to a "YYYY-MM-DD" date string, returning the same format
+  const addWeeksToDateStr = (dateStr: string, weeks: number): string => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + weeks * 7);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  };
 
   // Helper to adjust end time based on start time and number of hours
   const updateEndTimeFromHours = (newHours: number, currentStartTime: string) => {
@@ -176,6 +219,9 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
         setDurationHours(24);
         setSector('Sobreaviso Intercorrências e Cirurgia Fetal');
         setModality('ps');
+        if (!PS_LOCATION_OPTIONS.includes(location)) {
+          setLocation(PS_LOCATION_OPTIONS[0]);
+        }
         break;
       case 'custom':
         // calculate from times
@@ -215,7 +261,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 
   const getNextAvailableLocation = (): string | null => {
     const usedLocations = [location, ...additionalLocations];
-    for (const sala of LOCATION_OPTIONS) {
+    for (const sala of locationOptions) {
       if (!usedLocations.includes(sala)) return sala;
     }
     return null;
@@ -278,10 +324,17 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!date) return;
+    if (!date) {
+      setValidationError('Selecione a data do plantão antes de continuar.');
+      scrollFormToTop();
+      return;
+    }
 
     // Validação: Doctor não pode ter dois plantões no mesmo horário
-    if (!validateNoDoctorConflict()) return;
+    if (!validateNoDoctorConflict()) {
+      scrollFormToTop();
+      return;
+    }
 
     // Validação de horário
     if (!startTime || !endTime) {
@@ -331,6 +384,20 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       });
     }
 
+    // Save recurring occurrences, every N weeks, same room/doctor/hours
+    if (!shiftToEdit && repeatIntervalWeeks > 0 && repeatCount > 0) {
+      for (let i = 1; i <= repeatCount; i++) {
+        const occurrenceDate = addWeeksToDateStr(date, repeatIntervalWeeks * i);
+        setTimeout(() => {
+          onSaveShift({
+            ...baseShift,
+            date: occurrenceDate,
+            location,
+          });
+        }, 150 + i * 150);
+      }
+    }
+
     onClose();
   };
 
@@ -372,7 +439,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
         </div>
 
         {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
+        <form ref={formBodyRef} onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
 
           {/* Validation Error Alert */}
           {validationError && (
@@ -468,7 +535,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <button
                 type="button"
-                onClick={() => setModality('ps')}
+                onClick={() => handleModalityChange('ps')}
                 className={`p-3 rounded-2xl border text-left transition cursor-pointer flex items-start gap-3 ${
                   modality === 'ps'
                     ? 'bg-rose-50 border-rose-400 text-rose-950 ring-2 ring-rose-400/30 shadow-xs'
@@ -495,7 +562,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setModality('agenda')}
+                onClick={() => handleModalityChange('agenda')}
                 className={`p-3 rounded-2xl border text-left transition cursor-pointer flex items-start gap-3 ${
                   modality === 'agenda'
                     ? 'bg-teal-50 border-teal-500 text-teal-950 ring-2 ring-teal-500/30 shadow-xs'
@@ -653,6 +720,80 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
             </div>
           </div>
 
+          {/* Recurrence: repeat this shift every N weeks (new shifts only) */}
+          {!shiftToEdit && (
+            <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center gap-1.5">
+                <Repeat className="w-4 h-4 text-teal-700" />
+                <div>
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                    Repetição
+                  </label>
+                  <span className="text-[10px] text-slate-400">
+                    Para médicos com plantão fixo (ex: 1x por mês = a cada 4 semanas)
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                {[
+                  { weeks: 0, label: 'Não repete' },
+                  { weeks: 1, label: 'A cada semana' },
+                  { weeks: 2, label: 'A cada 2 sem.' },
+                  { weeks: 3, label: 'A cada 3 sem.' },
+                  { weeks: 4, label: 'A cada 4 sem.' },
+                ].map(opt => (
+                  <button
+                    key={opt.weeks}
+                    type="button"
+                    onClick={() => setRepeatIntervalWeeks(opt.weeks)}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-bold transition cursor-pointer ${
+                      repeatIntervalWeeks === opt.weeks
+                        ? 'bg-teal-700 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {repeatIntervalWeeks > 0 && (
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-[11px] text-slate-500 font-semibold">
+                    Repetir por quantas ocorrências (além desta)?
+                  </span>
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setRepeatCount(Math.max(1, repeatCount - 1))}
+                      disabled={repeatCount <= 1}
+                      className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 flex items-center justify-center transition cursor-pointer"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-6 text-center font-bold text-sm text-teal-900">{repeatCount}</span>
+                    <button
+                      type="button"
+                      onClick={() => setRepeatCount(Math.min(24, repeatCount + 1))}
+                      disabled={repeatCount >= 24}
+                      className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 flex items-center justify-center transition cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {repeatIntervalWeeks > 0 && (
+                <p className="text-[10px] text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5">
+                  Serão criados mais <strong>{repeatCount}</strong> plantão(ões), a cada <strong>{repeatIntervalWeeks}</strong> semana(s),
+                  o último em <strong>{formatDateToPt(addWeeksToDateStr(date, repeatIntervalWeeks * repeatCount))}</strong>.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Sector / Specialty in Fetal Medicine */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -672,14 +813,22 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
           {/* Hospital / Unit */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Hospital / Unidade
+              Sala {modality === 'ps' ? '(Pronto-Socorro)' : '(Agenda)'}
             </label>
             <select
               value={location}
               onChange={e => setLocation(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none"
+              className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold border outline-none focus:ring-2 ${
+                modality === 'ps'
+                  ? 'bg-rose-50 border-rose-300 text-rose-900 focus:ring-rose-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-800 focus:ring-teal-500'
+              }`}
             >
-              {LOCATION_OPTIONS.map(loc => (
+              {/* Keep showing the current value even if it belongs to the other modality's pool (legacy shifts) */}
+              {!locationOptions.includes(location) && (
+                <option value={location}>{location}</option>
+              )}
+              {locationOptions.map(loc => (
                 <option key={loc} value={loc}>{loc}</option>
               ))}
             </select>

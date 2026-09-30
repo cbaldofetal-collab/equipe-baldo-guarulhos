@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  Users, 
-  UserPlus, 
-  Phone, 
-  Mail, 
-  ShieldCheck, 
-  Clock, 
+import {
+  X,
+  Users,
+  UserPlus,
+  Phone,
+  Mail,
+  ShieldCheck,
+  Clock,
   Check,
-  Stethoscope
+  Stethoscope,
+  UserMinus
 } from 'lucide-react';
 import { Doctor, Shift } from '../types';
 import { calculateHours } from '../utils/date';
@@ -22,6 +23,7 @@ interface TeamDirectoryModalProps {
   currentDate: Date;
   onSelectDoctor: (doc: Doctor) => void;
   onAddDoctor: (docData: { name: string; crm: string; phone: string; email: string; specialty: string }) => void;
+  onRequestRemoveDoctor: (doc: Doctor, shiftCount: number) => void;
 }
 
 export const TeamDirectoryModal: React.FC<TeamDirectoryModalProps> = ({
@@ -33,6 +35,7 @@ export const TeamDirectoryModal: React.FC<TeamDirectoryModalProps> = ({
   currentDate,
   onSelectDoctor,
   onAddDoctor,
+  onRequestRemoveDoctor,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState('');
@@ -233,6 +236,16 @@ export const TeamDirectoryModal: React.FC<TeamDirectoryModalProps> = ({
                         className="px-3 py-1.5 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer shrink-0"
                       >
                         Operar como
+                      </button>
+                    )}
+
+                    {!isCurrent && currentDoctor.isCoordinator && (
+                      <button
+                        onClick={() => onRequestRemoveDoctor(doc, docShifts.length)}
+                        title="Retirar médico da equipe"
+                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer shrink-0"
+                      >
+                        <UserMinus className="w-4 h-4" />
                       </button>
                     )}
                   </div>
