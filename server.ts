@@ -472,9 +472,10 @@ app.post('/api/shifts', async (req: Request, res: Response) => {
     let startTotalMin = startHour * 60 + startMin;
     let endTotalMin = endHour * 60 + endMin;
 
-    // If end time is less than start time, it's an overnight shift (e.g., 19:00 to 01:00)
-    if (endTotalMin < startTotalMin) {
-      endTotalMin += 24 * 60; // Add 24 hours for overnight shifts
+    // If end time is less than or equal to start time, it's an overnight shift
+    // (e.g., 19:00 to 01:00) or a full 24h shift ending at the same clock time (07:00 to 07:00)
+    if (endTotalMin <= startTotalMin) {
+      endTotalMin += 24 * 60; // Add 24 hours for overnight/24h shifts
     }
 
     console.log(`[DEBUG] startTotalMin: ${startTotalMin}, endTotalMin: ${endTotalMin}`);
@@ -591,9 +592,10 @@ app.put('/api/shifts/:id', async (req: Request, res: Response) => {
     let startTotalMin = startHour * 60 + startMin;
     let endTotalMin = endHour * 60 + endMin;
 
-    // If end time is less than start time, it's an overnight shift (e.g., 19:00 to 01:00)
-    if (endTotalMin < startTotalMin) {
-      endTotalMin += 24 * 60; // Add 24 hours for overnight shifts
+    // If end time is less than or equal to start time, it's an overnight shift
+    // (e.g., 19:00 to 01:00) or a full 24h shift ending at the same clock time (07:00 to 07:00)
+    if (endTotalMin <= startTotalMin) {
+      endTotalMin += 24 * 60; // Add 24 hours for overnight/24h shifts
     }
 
     if (startTotalMin >= endTotalMin) {

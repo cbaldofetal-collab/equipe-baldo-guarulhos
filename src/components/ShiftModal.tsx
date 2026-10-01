@@ -352,7 +352,12 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
     const startTotalMin = startHour * 60 + startMin;
-    const endTotalMin = endHour * 60 + endMin;
+    let endTotalMin = endHour * 60 + endMin;
+
+    // Overnight shift (e.g. 19:00 to 01:00): end time wraps past midnight
+    if (endTotalMin <= startTotalMin) {
+      endTotalMin += 24 * 60;
+    }
 
     if (startTotalMin >= endTotalMin) {
       alert('O horário de fim deve ser após o horário de início');

@@ -349,7 +349,7 @@ app.post("/api/shifts", async (req, res) => {
     }
     let startTotalMin = startHour * 60 + startMin;
     let endTotalMin = endHour * 60 + endMin;
-    if (endTotalMin < startTotalMin) {
+    if (endTotalMin <= startTotalMin) {
       endTotalMin += 24 * 60;
     }
     console.log(`[DEBUG] startTotalMin: ${startTotalMin}, endTotalMin: ${endTotalMin}`);
@@ -445,7 +445,7 @@ app.put("/api/shifts/:id", async (req, res) => {
     const [endHour, endMin] = newEndTime.split(":").map(Number);
     let startTotalMin = startHour * 60 + startMin;
     let endTotalMin = endHour * 60 + endMin;
-    if (endTotalMin < startTotalMin) {
+    if (endTotalMin <= startTotalMin) {
       endTotalMin += 24 * 60;
     }
     if (startTotalMin >= endTotalMin) {
