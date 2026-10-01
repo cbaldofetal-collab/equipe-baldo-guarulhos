@@ -282,7 +282,7 @@ export default function App() {
         });
         if (res.ok) {
           const created = await res.json();
-          setShifts(prev => [...prev, created]);
+          setShifts(prev => prev.some(s => s.id === created.id) ? prev : [...prev, created]);
           showToast('✅ Plantão criado com sucesso!');
           // Open replicate modal after creating a new shift
           setShiftToReplicate(created);

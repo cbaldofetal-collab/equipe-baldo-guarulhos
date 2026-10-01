@@ -411,9 +411,11 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
                 {/* Shift badges list inside day cell */}
                 <div className="space-y-1 flex-1 overflow-y-auto max-h-[105px] pr-0.5 custom-scrollbar">
                   {(() => {
-                    // Group shifts by startTime + shiftType to show rooms together
+                    // Group shifts by startTime + shiftType + modality to show rooms together
+                    // (modality is included so a PS shift never gets merged into an Agenda card, or vice versa)
                     const groupedShifts = dayShifts.reduce((acc, shift) => {
-                      const key = `${shift.startTime}-${shift.shiftType}`;
+                      const shiftModalityKey = shift.modality || (shift.shiftType === 'sobreaviso' ? 'ps' : 'agenda');
+                      const key = `${shift.startTime}-${shift.shiftType}-${shiftModalityKey}`;
                       if (!acc[key]) acc[key] = [];
                       acc[key].push(shift);
                       return acc;
@@ -537,7 +539,7 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
 
                       return (
                         <div
-                          key={`group-${firstShift.startTime}-${firstShift.shiftType}`}
+                          key={`group-${firstShift.startTime}-${firstShift.shiftType}-${shiftModality}`}
                           className="text-[11px] p-1.5 rounded-lg border bg-white border-slate-200 hover:border-slate-300 text-slate-800 transition cursor-default text-left shadow-xs"
                         >
                           {/* Header: Type / Time */}
