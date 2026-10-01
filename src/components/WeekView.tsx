@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Activity
 } from 'lucide-react';
-import { Shift, Doctor } from '../types';
+import { Shift, Doctor, Hospital, HOSPITAL_LABELS, HOSPITAL_SHORT_LABELS } from '../types';
 import { 
   WEEKDAY_NAMES_PT, 
   formatFriendlyDate, 
@@ -45,6 +45,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
 }) => {
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState<string>('all');
   const [selectedModalityFilter, setSelectedModalityFilter] = useState<string>('all');
+  const [selectedHospitalFilter, setSelectedHospitalFilter] = useState<string>('all');
   // Get start of week (Sunday)
   const currentDayOfWeek = currentDate.getDay();
   const startOfWeek = new Date(currentDate);
@@ -158,6 +159,21 @@ export const WeekView: React.FC<WeekViewProps> = ({
           ))}
         </div>
 
+        {/* Hospital filter */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-slate-500 font-semibold mr-1">Hospital:</span>
+          <select
+            value={selectedHospitalFilter}
+            onChange={e => setSelectedHospitalFilter(e.target.value)}
+            className="bg-slate-100 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+          >
+            <option value="all">Todos</option>
+            {(['analia', 'sc', 'gru'] as Hospital[]).map(h => (
+              <option key={h} value={h}>{HOSPITAL_LABELS[h]}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Doctor filter pills */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-slate-500 font-semibold mr-1">Médico:</span>
@@ -208,7 +224,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
               if (selectedModalityFilter === 'all') return true;
               const shiftMod = s.modality || (s.shiftType === 'sobreaviso' ? 'ps' : 'agenda');
               return shiftMod === selectedModalityFilter;
-            });
+            })
+            .filter(s => selectedHospitalFilter === 'all' || (s.hospital || 'analia') === selectedHospitalFilter);
 
           return (
             <div
@@ -295,6 +312,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                 : 'bg-teal-100 text-teal-800 border border-teal-200'
                             }`}>
                               {shiftModality === 'ps' ? 'PS' : 'Agenda'}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-tight shrink-0 bg-slate-200 text-slate-700 border border-slate-300">
+                              {HOSPITAL_SHORT_LABELS[shift.hospital || 'analia']}
                             </span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded truncate ${
                               isSobreaviso

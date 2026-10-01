@@ -10,6 +10,20 @@ export type ShiftType =
 
 export type ShiftModality = 'ps' | 'agenda'; // PS (Pronto-Socorro / Urgência) ou Agenda (Ambulatório / Exames Eletivos)
 
+export type Hospital = 'analia' | 'sc' | 'gru'; // Anália Franco, São Caetano, Guarulhos
+
+export const HOSPITAL_LABELS: Record<Hospital, string> = {
+  analia: 'Anália Franco',
+  sc: 'São Caetano',
+  gru: 'Guarulhos',
+};
+
+export const HOSPITAL_SHORT_LABELS: Record<Hospital, string> = {
+  analia: 'AF',
+  sc: 'SC',
+  gru: 'GRU',
+};
+
 export type ShiftSector =
   | 'Medicina Fetal - Plantão e Sala de Parto'
   | 'Sobreaviso Intercorrências e Cirurgia Fetal'
@@ -42,6 +56,7 @@ export interface Shift {
   durationHours: number; // Quantidade de horas no período (ex: 6, 8, 12, 24)
   sector: ShiftSector;
   location: string;
+  hospital: Hospital;
   doctorId: string | null; // null means 'Vago' / Open for claim
   status: ShiftStatus;
   notes?: string;

@@ -314,6 +314,7 @@ app.post("/api/shifts", async (req, res) => {
       duration_hours,
       sector,
       location,
+      hospital,
       doctor_id,
       notes,
       authorName,
@@ -357,6 +358,8 @@ app.post("/api/shifts", async (req, res) => {
     }
     const calculatedHours = typeof duration_hours === "number" && duration_hours > 0 ? duration_hours : calculateShiftHours(start_time, end_time, shift_type);
     const shiftModality = modality === "agenda" ? "agenda" : "ps";
+    const validHospitals = ["analia", "sc", "gru"];
+    const shiftHospital = validHospitals.includes(hospital) ? hospital : "analia";
     const newShift = {
       id: `shift-${Date.now()}-${Math.floor(Math.random() * 1e3)}`,
       date,
@@ -367,6 +370,7 @@ app.post("/api/shifts", async (req, res) => {
       duration_hours: calculatedHours,
       sector: sector || "Medicina Fetal - Plant\xE3o e Sala de Parto",
       location: location || "Sala 1",
+      hospital: shiftHospital,
       doctor_id: doctor_id || null,
       status: doctor_id ? "confirmed" : "open",
       notes: notes || "",
@@ -409,6 +413,7 @@ app.put("/api/shifts/:id", async (req, res) => {
       duration_hours,
       sector,
       location,
+      hospital,
       doctor_id,
       status,
       notes,
@@ -457,6 +462,7 @@ app.put("/api/shifts/:id", async (req, res) => {
       duration_hours: newDuration,
       sector: sector ?? shift.sector,
       location: location ?? shift.location,
+      hospital: ["analia", "sc", "gru"].includes(hospital) ? hospital : shift.hospital,
       doctor_id: doctor_id !== void 0 ? doctor_id : shift.doctor_id,
       status: status ?? (doctor_id ? "confirmed" : "open"),
       notes: notes !== void 0 ? notes : shift.notes,

@@ -15,7 +15,7 @@ import {
   Copy,
   Calendar
 } from 'lucide-react';
-import { Shift, Doctor } from '../types';
+import { Shift, Doctor, Hospital, HOSPITAL_LABELS, HOSPITAL_SHORT_LABELS } from '../types';
 import { formatDateToPt, calculateHours, MONTH_NAMES_PT } from '../utils/date';
 import { generateWhatsAppScheduleText, downloadICalendar } from '../utils/exportSchedule';
 
@@ -45,6 +45,7 @@ export const ListView: React.FC<ListViewProps> = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [modalityFilter, setModalityFilter] = useState('all');
+  const [hospitalFilter, setHospitalFilter] = useState('all');
   const [copiedSuccess, setCopiedSuccess] = useState(false);
 
   const docMap = new Map<string, Doctor>(doctors.map(d => [d.id, d]));
@@ -65,6 +66,9 @@ export const ListView: React.FC<ListViewProps> = ({
       const shiftMod = shift.modality || (shift.shiftType === 'sobreaviso' ? 'ps' : 'agenda');
       if (shiftMod !== modalityFilter) return false;
     }
+
+    // Hospital
+    if (hospitalFilter !== 'all' && (shift.hospital || 'analia') !== hospitalFilter) return false;
 
     // Status
     if (statusFilter === 'trade_requested' && shift.status !== 'trade_requested') return false;
@@ -200,6 +204,18 @@ export const ListView: React.FC<ListViewProps> = ({
             <option value="all">Todas as Modalidades</option>
             <option value="ps">🏥 Pronto-Socorro (PS)</option>
             <option value="agenda">📋 Agenda / Eletivo</option>
+          </select>
+
+          {/* Hospital filter */}
+          <select
+            value={hospitalFilter}
+            onChange={e => setHospitalFilter(e.target.value)}
+            className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 font-medium outline-none cursor-pointer"
+          >
+            <option value="all">Todos os Hospitais</option>
+            {(['analia', 'sc', 'gru'] as Hospital[]).map(h => (
+              <option key={h} value={h}>{HOSPITAL_LABELS[h]}</option>
+            ))}
           </select>
 
           {/* Sector filter */}
@@ -372,6 +388,9 @@ export const ListView: React.FC<ListViewProps> = ({
                           <Building2 className={`w-3.5 h-3.5 ${shiftModality === 'ps' ? 'text-white' : 'text-slate-400'}`} />
                           <span>{shift.location}</span>
                         </div>
+                        <span className="inline-block mt-1 text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                          {HOSPITAL_SHORT_LABELS[shift.hospital || 'analia']}
+                        </span>
                       </td>
 
                       {/* Status */}

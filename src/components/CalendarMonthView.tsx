@@ -15,7 +15,7 @@ import {
   Sparkles,
   Trash2
 } from 'lucide-react';
-import { Shift, Doctor } from '../types';
+import { Shift, Doctor, Hospital, HOSPITAL_LABELS, HOSPITAL_SHORT_LABELS } from '../types';
 import { 
   MONTH_NAMES_PT, 
   WEEKDAY_NAMES_PT, 
@@ -55,6 +55,7 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState<string>('all');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [selectedModalityFilter, setSelectedModalityFilter] = useState<string>('all');
+  const [selectedHospitalFilter, setSelectedHospitalFilter] = useState<string>('all');
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -82,6 +83,11 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
     if (selectedModalityFilter !== 'all') {
       const shiftModality = shift.modality || (shift.shiftType === 'sobreaviso' ? 'ps' : 'agenda');
       if (shiftModality !== selectedModalityFilter) return false;
+    }
+
+    if (selectedHospitalFilter !== 'all') {
+      const shiftHospital = shift.hospital || 'analia';
+      if (shiftHospital !== selectedHospitalFilter) return false;
     }
 
     return true;
@@ -213,6 +219,21 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
               <option value="all">PS & Agenda</option>
               <option value="ps">🏥 Somente PS</option>
               <option value="agenda">📋 Somente Agenda</option>
+            </select>
+          </div>
+
+          {/* Hospital filter */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs">
+            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={selectedHospitalFilter}
+              onChange={e => setSelectedHospitalFilter(e.target.value)}
+              className="bg-transparent font-medium text-slate-800 outline-none cursor-pointer"
+            >
+              <option value="all">Todos os Hospitais</option>
+              {(['analia', 'sc', 'gru'] as Hospital[]).map(h => (
+                <option key={h} value={h}>{HOSPITAL_LABELS[h]}</option>
+              ))}
             </select>
           </div>
 
@@ -446,6 +467,9 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
                                 }`}>
                                   {shiftModality === 'ps' ? 'PS' : 'Agenda'}
                                 </span>
+                                <span className="px-1 py-0.2 rounded text-[8.5px] font-black uppercase tracking-tight shrink-0 bg-slate-200 text-slate-700 border border-slate-300">
+                                  {HOSPITAL_SHORT_LABELS[shift.hospital || 'analia']}
+                                </span>
                                 <span className={`font-semibold text-[10px] truncate ${
                                   isSobreaviso ? 'text-rose-700 font-bold' : isOpen ? 'text-amber-800' : 'text-slate-600'
                                 }`}>
@@ -555,6 +579,9 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
                                       ? 'bg-rose-600 text-white'
                                       : 'text-slate-500'
                                   }`}>{shift.location}</span>
+                                  <span className="font-bold shrink-0 px-1 rounded bg-slate-200 text-slate-600">
+                                    {HOSPITAL_SHORT_LABELS[shift.hospital || 'analia']}
+                                  </span>
                                   <span className="text-slate-700 truncate">{docName}</span>
                                 </div>
                               );

@@ -17,8 +17,12 @@ import {
   Minus,
   Repeat
 } from 'lucide-react';
-import { Shift, Doctor, ShiftType, ShiftSector, ShiftModality } from '../types';
+import { Shift, Doctor, ShiftType, ShiftSector, ShiftModality, Hospital, HOSPITAL_LABELS } from '../types';
 import { formatDateToPt, calculateHours } from '../utils/date';
+
+// Which hospital this deployment belongs to — used as the default when creating a new shift
+const APP_HOSPITAL: Hospital = 'gru';
+const HOSPITAL_OPTIONS: Hospital[] = ['analia', 'sc', 'gru'];
 
 interface ShiftModalProps {
   isOpen: boolean;
@@ -84,6 +88,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   const [endTime, setEndTime] = useState('13:00');
   const [sector, setSector] = useState<ShiftSector>('Medicina Fetal - Plantão e Sala de Parto');
   const [location, setLocation] = useState(PS_LOCATION_OPTIONS[0]);
+  const [hospital, setHospital] = useState<Hospital>(APP_HOSPITAL);
   const [additionalLocations, setAdditionalLocations] = useState<string[]>([]);
   const [doctorId, setDoctorId] = useState<string | ''>('');
   const [notes, setNotes] = useState('');
@@ -129,6 +134,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       setEndTime(shiftToEdit.endTime);
       setSector(shiftToEdit.sector);
       setLocation(shiftToEdit.location);
+      setHospital(shiftToEdit.hospital || APP_HOSPITAL);
       setDoctorId(shiftToEdit.doctorId || '');
       setNotes(shiftToEdit.notes || '');
       setAdditionalLocations([]);
@@ -147,6 +153,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       setEndTime('13:00');
       setSector('Medicina Fetal - Plantão e Sala de Parto');
       setLocation(PS_LOCATION_OPTIONS[0]);
+      setHospital(APP_HOSPITAL);
       setDoctorId(currentDoctor.id);
       setNotes('');
       setAdditionalLocations([]);
@@ -362,6 +369,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       modality,
       duration_hours: Number(durationHours) || 6,
       sector,
+      hospital,
       doctor_id: doctorId || null,
       notes,
     };
@@ -586,6 +594,29 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                   </p>
                 </div>
               </button>
+            </div>
+          </div>
+
+          {/* Hospital / Unidade */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Hospital / Unidade
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {HOSPITAL_OPTIONS.map(h => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => setHospital(h)}
+                  className={`px-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                    hospital === h
+                      ? 'bg-slate-800 border-slate-800 text-white shadow-xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {HOSPITAL_LABELS[h]}
+                </button>
+              ))}
             </div>
           </div>
 

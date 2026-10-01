@@ -14,7 +14,7 @@ import {
   Building2,
   FileText
 } from 'lucide-react';
-import { Shift, Doctor } from '../types';
+import { Shift, Doctor, HOSPITAL_LABELS } from '../types';
 import { formatFriendlyDate, calculateHours } from '../utils/date';
 
 interface DayViewProps {
@@ -202,6 +202,10 @@ export const DayView: React.FC<DayViewProps> = ({
                             : 'bg-teal-100 text-teal-800 border border-teal-200'
                         }`}>
                           {shiftModality === 'ps' ? '🏥 Pronto-Socorro (PS)' : '📋 Agenda / Exames'}
+                        </span>
+
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700 border border-slate-300">
+                          {HOSPITAL_LABELS[shift.hospital || 'analia']}
                         </span>
 
                         <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
